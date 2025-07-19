@@ -25,12 +25,12 @@ cd trading-alerts-system
 pip install -r requirements.txt
 ```
 
-### 3. Настройка конфигурации
+### 3. Настройка переменных окружения
 ```bash
-cp config_template.py config.py
+cp .env.example .env
 ```
 
-Откройте `config.py` и заполните:
+Откройте `.env` и заполните:
 - `BINANCE_API_KEY` - API ключ Binance
 - `BINANCE_SECRET_KEY` - Секретный ключ Binance
 - `TELEGRAM_BOT_TOKEN` - Токен Telegram бота
@@ -55,6 +55,7 @@ cp config_template.py config.py
 3. Создайте новый API ключ
 4. Включите права на чтение (Spot & Margin Trading)
 5. **НЕ включайте права на торговлю для безопасности**
+6. Скопируйте API Key и Secret Key в `.env` файл
 
 ## 🚀 Запуск
 
