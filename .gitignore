@@ -57,6 +57,11 @@ config.py
 *.key
 *.pem
 
+# Firebase credentials
+credentials/
+*firebase*.json
+*service-account*.json
+
 # Trading specific
 alerts.json
 performance.json
