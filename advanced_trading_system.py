@@ -17,6 +17,7 @@ import logging
 from dataclasses import dataclass, asdict
 import ta
 from config import Config, MarketConditions, AlertMessages
+from firebase_manager import firebase_manager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -704,6 +705,37 @@ class EnhancedNotificationManager:
         
         if Config.ENABLE_CONSOLE_OUTPUT:
             self._print_alert(setup)
+            
+        # Сохранение в Firebase
+        if firebase_manager.is_connected():
+            try:
+                # Конвертируем dataclass в словарь для сохранения
+                alert_data = asdict(setup)
+                # Datetime нужно конвертировать в строку, так как Firestore не принимает его напрямую
+                alert_data['timestamp'] = setup.timestamp.isoformat()
+                
+                # Конвертируем numpy типы в стандартные Python типы
+                def convert_numpy_types(obj):
+                    if isinstance(obj, dict):
+                        return {k: convert_numpy_types(v) for k, v in obj.items()}
+                    elif isinstance(obj, list):
+                        return [convert_numpy_types(v) for v in obj]
+                    elif hasattr(obj, 'item'):  # numpy types
+                        return obj.item()
+                    elif isinstance(obj, (np.bool_, bool)):
+                        return bool(obj)
+                    elif isinstance(obj, (np.integer, int)):
+                        return int(obj)
+                    elif isinstance(obj, (np.floating, float)):
+                        return float(obj)
+                    else:
+                        return obj
+                
+                alert_data = convert_numpy_types(alert_data)
+                firebase_manager.save_alert(alert_data)
+                logger.info(f"Алерт для {setup.symbol} успешно сохранен в Firebase.")
+            except Exception as e:
+                logger.error(f"Ошибка сохранения алерта в Firebase: {e}")
         
         if success:
             self.alerts_sent_today += 1
@@ -962,6 +994,14 @@ if __name__ == "__main__":
             print(f"\n{i}. {setup.symbol} - {setup.setup_type}")
             print(f"   Вход: ${setup.entry_price:.4f} | Стоп: ${setup.stop_loss:.4f} | Цель: ${setup.take_profit:.4f}")
             print(f"   R:R: 1:{setup.risk_reward:.1f} | Плечо: {setup.leverage}x | Уверенность: {setup.confidence*100:.0f}%")
+            
+            # Тестируем отправку уведомлений (включая Firebase)
+            print(f"\n📤 Тестируем отправку уведомления для {setup.symbol}...")
+            success = system.notification_manager.send_enhanced_alert(setup)
+            if success:
+                print(f"✅ Уведомление для {setup.symbol} отправлено успешно")
+            else:
+                print(f"❌ Ошибка отправки уведомления для {setup.symbol}")
     else:
         print("\n❌ Торговые возможности не найдены")
     
